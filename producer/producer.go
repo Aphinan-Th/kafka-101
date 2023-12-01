@@ -35,7 +35,7 @@ func main() {
 	// Initialize Kafka producer
 	var err error
 	producer, err = kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": "localhost:9093",
+		"bootstrap.servers": "localhost:9092",
 		"client.id":         "go-app",
 	})
 	if err != nil {

@@ -25,7 +25,7 @@ func main() {
 
 	// Initialize Kafka consumer
 	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": "localhost:9093",
+		"bootstrap.servers": "localhost:9092",
 		"group.id":          "message-group",
 		"auto.offset.reset": "earliest",
 	})
