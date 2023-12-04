@@ -35,7 +35,8 @@ func main() {
 	// Initialize Kafka producer
 	var err error
 	producer, err = kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": "localhost:9092",
+		// "bootstrap.servers": "localhost:8097",
+		"bootstrap.servers": "localhost:8097,localhost:8098,localhost:8099",
 		"client.id":         "go-app",
 	})
 	if err != nil {
@@ -156,8 +157,30 @@ func placeOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func produceMessage(topic, message string) error {
-	return producer.Produce(&kafka.Message{
+	deliveryChan := make(chan kafka.Event)
+
+	err := producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Value:          []byte(message),
-	}, nil)
+	}, deliveryChan)
+
+	if err != nil {
+		log.Printf("Error producing message: %v", err)
+		return err
+	}
+
+	// Wait for the delivery report
+	e := <-deliveryChan
+	m := e.(*kafka.Message)
+
+	if m.TopicPartition.Error != nil {
+		log.Printf("Delivery failed: %v", m.TopicPartition.Error)
+		return m.TopicPartition.Error
+	}
+
+	log.Printf("Produced message to topic %s [%d] at offset %v\n",
+		*m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset)
+
+	close(deliveryChan)
+	return nil
 }

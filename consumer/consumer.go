@@ -25,17 +25,19 @@ func main() {
 
 	// Initialize Kafka consumer
 	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": "localhost:9092",
+		// "bootstrap.servers": "localhost:8098",
+		"bootstrap.servers": "localhost:8097,localhost:8098,localhost:8099",
 		"group.id":          "message-group",
 		"auto.offset.reset": "earliest",
 	})
+	fmt.Println("consumer==============================")
 	if err != nil {
 		log.Fatalf("Failed to create Kafka consumer: %v", err)
 	}
 	defer consumer.Close()
 
 	// Subscribe to the Kafka topic
-	err = consumer.SubscribeTopics([]string{"message-topic"}, nil)
+	err = consumer.SubscribeTopics([]string{"kafka_topic_one"}, nil)
 	if err != nil {
 		log.Fatalf("Error subscribing to topic: %v", err)
 	}
