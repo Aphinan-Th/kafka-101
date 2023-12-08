@@ -6,39 +6,19 @@ import (
 	"log"
 	"time"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+	db "kafka.exmaple/core"
+	"kafka.exmaple/helper"
+	"kafka.exmaple/models"
 )
-
-var db *gorm.DB
-
-type Order struct {
-	gorm.Model
-	UserLineUid string `gorm:"not null"`
-	Status      string `gorm:"not null"`
-}
 
 func main() {
 	// Initialize the database
-	initDB()
+	db.InitDB()
 
 	// Initialize Kafka consumer
-	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": "localhost:9092",
-		"group.id":          "message-group",
-		"auto.offset.reset": "earliest",
-	})
-	if err != nil {
-		log.Fatalf("Failed to create Kafka consumer: %v", err)
-	}
+	consumer := helper.InitConsumer([]string{"localhost:8097", "localhost:8098", "localhost:8099"}, "message-group", "kafka_topic_one")
 	defer consumer.Close()
-
-	// Subscribe to the Kafka topic
-	err = consumer.SubscribeTopics([]string{"message-topic"}, nil)
-	if err != nil {
-		log.Fatalf("Error subscribing to topic: %v", err)
-	}
 
 	// Consume messages
 	for {
@@ -52,17 +32,6 @@ func main() {
 			fmt.Printf("Error while consuming message: %v\n", err)
 		}
 	}
-}
-
-func initDB() {
-	var err error
-	db, err = gorm.Open("mysql", "root:root@tcp(localhost)/tutorial?parseTime=true")
-	if err != nil {
-		log.Fatalf("Failed to connect to the database: %v", err)
-	}
-
-	// Auto Migrate
-	db.AutoMigrate(&Order{})
 }
 
 func processMessage(message []byte) {
@@ -86,7 +55,7 @@ func processMessage(message []byte) {
 	}
 
 	// Update the order status to "success"
-	if err := db.Model(&Order{}).Where("id = ?", uint(orderID)).Update("status", "success").Error; err != nil {
+	if err := db.DB.Model(&models.Order{}).Where("id = ?", uint(orderID)).Update("status", "success").Error; err != nil {
 		log.Printf("Error updating order status: %v", err)
 		return
 	}
